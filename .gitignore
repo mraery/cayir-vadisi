@@ -1,0 +1,16 @@
+# Godot 4 cache & temporary artifacts
+.godot/
+*.tmp
+*.log
+__pycache__/
+*.py[cod]
+
+# Backup archives
+_yedek/
+assets/real/env/terrain_tiles_eski.png
+
+# Keep only V4 verification screenshots
+screenshots/0*
+screenshots/1*
+screenshots/rpg_*
+screenshots/v3_*
