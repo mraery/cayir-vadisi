@@ -849,6 +849,11 @@ func _spawn_enemies() -> void:
 		["shadow_knight", 2980, 490], ["hell_shaman", 3020, 730], ["shadow_knight", 3070, 580],
 		# Boss 3
 		["boss_malakor", 3260, 620],
+		# Güneydoğu Derin Boşluk Boyutu (Sv.14-18)
+		["slime_blue", 1440, 260], ["slime_blue", 2480, 850],
+		["void_stalker", 3320, 950], ["void_stalker", 3460, 1020], ["shadow_knight", 3380, 1180],
+		# Boss 4
+		["boss_void_emperor", 3400, 1100],
 	]
 	for sp in spots:
 		enemies.append(_make_enemy(sp[0], Vector2(sp[1], sp[2])))
@@ -1757,6 +1762,17 @@ func _update_enemies(delta: float) -> void:
 				m.aggro = true
 				enemies.append(m)
 
+		# Boss 4: Kadim Boşluk Hükümdarı Özel Mekaniği (Kara Delik / Boşluk Çekimi)
+		if e.boss_id == "void_emperor" and enraged and not e.summoned_p2:
+			e.summoned_p2 = true
+			_toast("BOŞLUK YARILIYOR! Kadim Boşluk Hükümdarı boyutu büküyor!", Color(0.8, 0.3, 1.0))
+			_spawn_fx("fx_skull", e.pos + Vector2(0, -16), 16.0, 2.0, Color(0.7, 0.2, 0.9))
+			shake = 0.6
+			for ox in [-80.0, 80.0]:
+				var vm := _make_enemy("void_stalker", e.pos + Vector2(ox, 30))
+				vm.aggro = true
+				enemies.append(vm)
+
 		# Telegraph Windup
 		if e.windup > 0:
 			e.windup -= delta
@@ -1821,19 +1837,19 @@ func _update_enemies(delta: float) -> void:
 					e.charge_t = 1.05
 					e.charge_dir = dir2
 					continue
-				if e.boss_id in ["korgath", "malakor"] and e.nova_cd <= 0:
-					e.nova_cd = 5.2 if enraged else 6.8
+				if e.boss_id in ["korgath", "malakor", "void_emperor"] and e.nova_cd <= 0:
+					e.nova_cd = 4.8 if enraged else 6.2
 					e.atk_anim = "atk2"
 					e.atk_anim_t = 0.6
-					var cnt := 8 if e.boss_id == "malakor" else 5
-					var pcol := Color(1.0, 0.45, 0.15) if e.boss_id == "malakor" else Color(1.0, 0.25, 0.35)
+					var cnt := 12 if e.boss_id == "void_emperor" else (8 if e.boss_id == "malakor" else 5)
+					var pcol := Color(0.75, 0.35, 1.0) if e.boss_id == "void_emperor" else (Color(1.0, 0.45, 0.15) if e.boss_id == "malakor" else Color(1.0, 0.25, 0.35))
 					for k in cnt:
 						var ang := k * TAU / float(cnt) + t * 0.5
-						projectiles.append({"pos": e.pos + Vector2(0, -16), "vel": Vector2(cos(ang), sin(ang)) * 155.0, "dmg": e.atk * 0.75, "life": 2.4, "col": pcol})
-					if e.boss_id == "malakor" and enraged:
-						for lz in 3:
-							var lp: Vector2 = p.pos + Vector2(randf_range(-55, 55), randf_range(-40, 40))
-							lightning_zones.append({"pos": lp, "t": 0.9, "dmg": e.atk * 1.15})
+						projectiles.append({"pos": e.pos + Vector2(0, -16), "vel": Vector2(cos(ang), sin(ang)) * (180.0 if e.boss_id == "void_emperor" else 155.0), "dmg": e.atk * 0.75, "life": 2.5, "col": pcol})
+					if (e.boss_id == "malakor" or e.boss_id == "void_emperor") and enraged:
+						for lz in 4:
+							var lp: Vector2 = p.pos + Vector2(randf_range(-65, 65), randf_range(-50, 50))
+							lightning_zones.append({"pos": lp, "t": 0.85, "dmg": e.atk * 1.25})
 					_play_sfx("boss")
 					continue
 
@@ -1984,6 +2000,29 @@ func _dodge_roll() -> void:
 	p.at = 0.0
 	_play_sfx("roll")
 	_spawn_fx("fx_smoke", p.pos, 18.0, 0.65)
+
+func _cast_magic_burst() -> void:
+	if state != "play" or in_house or p.roll_t > 0:
+		return
+	if p.stam < 20.0:
+		_toast("Yeterli Enerji Yok! Dinlen veya yemek ye.", Color(1.0, 0.5, 0.5))
+		return
+	p.stam -= 20.0
+	p.anim = "attack"
+	p.act_t = 0.35
+	_play_sfx("boss")
+	_spawn_fx("fx_explosion", p.pos + Vector2(0, -14), 16.0, 1.4, Color(0.6, 0.3, 1.0))
+	shake = 0.2
+	_toast("MİSTİK DALGA PATLAMASI! [Z]", Color(0.7, 0.4, 1.0))
+	var hit_cnt := 0
+	for e in enemies:
+		if not e.dead and e.pos.distance_to(p.pos) < 110.0:
+			var dmg := _stat_atk() * 2.2 + p.level * 8.0
+			e.kb = (e.pos - p.pos).normalized() * (60.0 if e.boss else 240.0)
+			_damage_enemy(e, dmg, true)
+			hit_cnt += 1
+	if hit_cnt > 0:
+		_spawn_fx("fx_sparkle", p.pos + Vector2(0, -20), 16.0, 1.0, Color(0.8, 0.4, 1.0))
 
 func _whirlwind_skill() -> void:
 	if state != "play" or p.spin_cd > 0 or p.roll_t > 0 or in_house:
@@ -2747,6 +2786,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_use_hotbar_tool()
 	elif kc == KEY_X:
 		_whirlwind_skill()
+	elif kc == KEY_Z:
+		_cast_magic_burst()
 	elif kc == KEY_E:
 		_interact_nearest()
 	elif kc == KEY_F:
