@@ -52,6 +52,7 @@ const BOSS_ARENAS := [
 	{"id": "grog", "pos": Vector2(1960, 195), "radius": 135.0, "label": "KUZEY HARABESİ — GROG (Sv.5)"},
 	{"id": "korgath", "pos": Vector2(2680, 310), "radius": 155.0, "label": "KANLI MAHZEN — KORGATH (Sv.9)"},
 	{"id": "malakor", "pos": Vector2(3260, 620), "radius": 175.0, "label": "CEHENNEM SUNAKI — MALAKOR (Sv.14)"},
+	{"id": "void_emperor", "pos": Vector2(3400, 1100), "radius": 185.0, "label": "DERİN BOŞLUK BOYUTU — KADİM BOŞLUK HÜKÜMDARI (Sv.18)"},
 ]
 
 const SEASON_MODS := [
@@ -2189,6 +2190,29 @@ func _consume_active_item() -> void:
 				grown += 1
 		_play_sfx("catch")
 		_toast("Bereket İksiri içildi! %d ekin hasada hazır!" % grown, Color(0.5, 1.0, 0.6))
+	elif cid == "scroll_fireball":
+		_play_sfx("hit")
+		var hit_cnt := 0
+		for e in enemies:
+			if not e.dead and e.pos.distance_to(p.pos) < 220.0:
+				_damage_enemy(e, 120.0 + p.level * 10.0, true)
+				_spawn_fx("fx_explosion", e.pos - Vector2(0, 14), 16.0, 0.8, Color(1.0, 0.4, 0.1))
+				hit_cnt += 1
+				if hit_cnt >= 3:
+					break
+		_toast("Alev Topu Parşömeni patlatıldı! (%d düşman vuruldu)" % hit_cnt, Color(1.0, 0.45, 0.2))
+		shake = 0.15
+	elif cid == "scroll_frost":
+		_play_sfx("swing")
+		var frost_cnt := 0
+		for e in enemies:
+			if not e.dead and e.pos.distance_to(p.pos) < 260.0:
+				_damage_enemy(e, 50.0 + p.level * 5.0, false)
+				e.kb = (e.pos - p.pos).normalized() * 40.0
+				_spawn_fx("fx_sparkle", e.pos - Vector2(0, 10), 16.0, 1.0, Color(0.4, 0.8, 1.0))
+				frost_cnt += 1
+		_toast("Buz Kasırgası! %d düşman donduruldu!" % frost_cnt, Color(0.4, 0.85, 1.0))
+		shake = 0.10
 	elif cid == "pot_rain":
 		is_raining = true
 		for c in farm_grid.keys():
@@ -2492,7 +2516,17 @@ func _give_gift_to_npc(item_id: String) -> void:
 	var pts := 15
 	var reaction := "Teşekkür ederim, çok düşüncelisin."
 	var fx_col := Color(0.85, 0.9, 1.0)
-	if item_id in v.loved:
+	if item_id == "mermaid_pendant":
+		pts = 250
+		reaction = "AMAN TANRIM! Denizkızı Tılsımı mı?! Evet, bin kere evet! Artık kaderimiz ve yolumuz bir! (Ebedi Bağ Kuruldu!)"
+		fx_col = Color(1.0, 0.2, 0.8)
+		_toast("%s ile Ebedi Bağ / Evlilik Bağı Kuruldu!" % v.name, Color(1.0, 0.3, 0.8))
+	elif item_id == "bouquet":
+		pts = 120
+		reaction = "Bu çiçek buketi... Gözlerimin içine bakarak vermen beni o kadar mutlu etti ki! Kalbim seninle atıyor!"
+		fx_col = Color(1.0, 0.3, 0.6)
+		_toast("%s ile Romantik Bağ Güçlendi!" % v.name, Color(1.0, 0.5, 0.7))
+	elif item_id in v.loved:
 		pts = 80
 		reaction = "VAAY! %s benim EN SEVDİĞİM şey! Çok teşekkürler! (+80 Dostluk)" % GameData.ITEMS[item_id].name
 		fx_col = Color(1.0, 0.4, 0.6)

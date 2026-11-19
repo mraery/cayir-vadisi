@@ -26,6 +26,8 @@ const WEAPON_BASES := [
 	{"name": "Kan Dişi Kılıç", "icon": 1014, "ls": 6},
 	{"name": "İblis Biçen Alev Kılıcı", "icon": 1016, "ls": 4},
 	{"name": "Grog'un Savaş Baltası", "icon": 1068, "ls": 2},
+	{"name": "Kadim Boşluk Tırpanı", "icon": 1014, "ls": 8},
+	{"name": "Yıldız Işığı Büyü Asası", "icon": 1008, "ls": 6},
 ]
 
 # skin: 0..4 hero görsel zırh katmanı
@@ -130,12 +132,30 @@ const ENEMY_DEFS := {
 		"arena": Vector2(3260, 620), "trophy": "boss_trophy_demon",
 		"mats": [["boss_trophy_demon", 1.0], ["ancient_skull", 1.0], ["spirit_crystal", 1.0]],
 	},
+	"slime_blue": {
+		"name": "Maden Balçığı", "spr": "sgob", "tint": Color(0.4, 0.7, 1.2, 0.85), "sc": 0.85, "bar": 22.0,
+		"hp": 45.0, "atk": 8.0, "def": 1.5, "spd": 55.0, "xp": 18, "gold": [6, 14],
+		"lvl": 2, "gear": 0.15, "mats": [["slime_jelly", 0.75], ["copper_ore", 0.2]],
+	},
+	"void_stalker": {
+		"name": "Boşluk Avcısı", "spr": "sskel", "tint": Color(0.65, 0.35, 0.95), "sc": 1.3, "bar": 26.0,
+		"hp": 160.0, "atk": 26.0, "def": 8.0, "spd": 64.0, "xp": 95, "gold": [30, 50],
+		"lvl": 9, "gear": 0.32, "mats": [["dark_essence", 0.7], ["void_crystal", 0.35]],
+	},
+	"boss_void_emperor": {
+		"name": "KADİM BOŞLUK HÜKÜMDARI", "spr": "demon", "tint": Color(0.5, 0.2, 0.85), "sc": 3.1,
+		"hp": 2600.0, "atk": 52.0, "def": 18.0, "spd": 60.0, "xp": 2200, "gold": [1800, 2500],
+		"lvl": 18, "gear": 1.0, "boss": true, "boss_id": "void_emperor",
+		"arena": Vector2(3400, 1100), "trophy": "boss_trophy_void",
+		"mats": [["boss_trophy_void", 1.0], ["void_crystal", 1.0], ["spirit_crystal", 1.0]],
+	},
 }
 
 const BOSS_LIST := [
 	{"id": "grog", "def": "boss_grog", "zone": "Kuzey Harabesi", "lvl": 5, "drop": "Grog'un Savaş Baltası + Goblin Lordu Dişi"},
 	{"id": "korgath", "def": "boss_korgath", "zone": "Kanlı Mahzen (Kuzeydoğu)", "lvl": 9, "drop": "Kan Dişi Kılıç + Kan Kristali"},
 	{"id": "malakor", "def": "boss_malakor", "zone": "Cehennem Sunakı (En Doğu)", "lvl": 14, "drop": "Efsanevi İblis Seti + İblis Boynuzu"},
+	{"id": "void_emperor", "def": "boss_void_emperor", "zone": "Derin Boşluk Boyutu (Güneydoğu)", "lvl": 18, "drop": "Tanrı Katı Boşluk Seti + Boşluk Kalbi"},
 ]
 
 const ITEMS := {
@@ -189,12 +209,21 @@ const ITEMS := {
 	"pot_heal": {"name": "Şifa İksiri", "icon": 1901, "type": "potion", "sell": 20, "hp": 80, "stam": 15, "desc": "Savaşta hızlıca 80 can yeniler. [H] tuşu ile iç."},
 	"pot_iron": {"name": "Demir Deri İksiri", "icon": 1900, "type": "potion", "sell": 65, "hp": 25, "def_buff": 60.0, "desc": "60 sn boyunca +12 Savunma verir. Boss avında çok etkili!"},
 	# Mob Loot & Boss Trophies
+	"slime_jelly": {"name": "Mavi Balçık Jeli", "icon": 1530, "type": "loot", "sell": 18, "desc": "Zindan balçıklarından düşer. Simyada ve parşömenlerde kullanılır."},
+	"void_crystal": {"name": "Boşluk Kristali", "icon": 1893, "type": "loot", "sell": 250, "desc": "Derin maden ve kadim iblislerin taşıdığı mor kristal."},
 	"monster_bone": {"name": "Kemik Parçası", "icon": 2163, "type": "loot", "sell": 12, "desc": "Yenilen canavarlardan düşer. Demircide kullanılır."},
 	"dark_essence": {"name": "Gölge Özü", "icon": 1563, "type": "loot", "sell": 45, "desc": "Gölge Ormanı yaratıklarının karanlık özü."},
 	"ancient_skull": {"name": "Kadim Kafatası", "icon": 2167, "type": "loot", "sell": 120, "desc": "Çok nadir. Güçlü yaratıklardan düşer."},
 	"boss_trophy_orc": {"name": "Goblin Lordu Dişi", "icon": 2163, "type": "loot", "sell": 180, "desc": "Boss Grog ganimeti! Demirci'de Nadir Boss Baltası döver."},
 	"boss_trophy_blood": {"name": "Kan Kristali", "icon": 1534, "type": "loot", "sell": 320, "desc": "Boss Korgath ganimeti! Kan Şövalyesi Zırhı dövmekte kullanılır."},
 	"boss_trophy_demon": {"name": "İblis Boynuzu", "icon": 2167, "type": "loot", "sell": 600, "desc": "Boss Malakor ganimeti! Efsanevi İblis Seti dövülür."},
+	"boss_trophy_void": {"name": "Kadim Boşluk Kalbi", "icon": 1891, "type": "loot", "sell": 1200, "desc": "Gizli Boss Kadim Boşluk Hükümdarı ganimeti! Tanrı Katı ekipman döver."},
+	# Özel İlişki & Romantizm Eşyaları (Stardew Valley Tarzı)
+	"bouquet": {"name": "Vadi Çiçek Buketi", "icon": 20, "type": "gift", "buy": 250, "sell": 100, "desc": "Köylülerle derin bağ kurmanı sağlar. 4+ kalp olan köylüye verince özel aşk/kardeşlik diyaloğu açar!"},
+	"mermaid_pendant": {"name": "Denizkızı Tılsımı", "icon": 1868, "type": "gift", "buy": 1500, "sell": 500, "desc": "Stardew efsanesi! 6 Kalp olan köy yoldaşına evlilik/ebedi yol arkadaşlığı teklif et!"},
+	# Yeni Büyü & Menzilli Silah Parşömenleri
+	"scroll_fireball": {"name": "Alev Topu Parşömeni", "icon": 1016, "type": "potion", "sell": 160, "desc": "Kullandığında en yakın 3 düşmana 120 Ateş Hasarı vuran alev topları fırlatır!"},
+	"scroll_frost": {"name": "Buz Kasırgası Parşömeni", "icon": 1005, "type": "potion", "sell": 180, "desc": "Çevredeki tüm düşmanları dondurur ve 4 saniye boyunca %60 yavaşlatır!"},
 }
 
 # ---------------- STARDEW TARZI YAŞAYAN KOMŞULAR (6 KÖYLÜ) ----------------
