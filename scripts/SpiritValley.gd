@@ -20,6 +20,8 @@ const FARM_ROWS := 6
 const SEASON_NAMES := ["İlkbahar", "Yaz", "Sonbahar", "Kış"]
 const SAVE_PATH := "user://cayir_vadisi_save.json"
 const SHADOW_X := 2224.0
+const VOID_ARENA := Vector2(2720, 880)
+const NORMAL_WEAPON_BASES := 10 # WEAPON_BASES[10+] boss silahları
 const FORGE_POS := Vector2(1260, 505)
 const WELL_POS := Vector2(530, 355)
 const CRATE_POS := Vector2(590, 355)
@@ -52,7 +54,7 @@ const BOSS_ARENAS := [
 	{"id": "grog", "pos": Vector2(1960, 195), "radius": 135.0, "label": "KUZEY HARABESİ — GROG (Sv.5)"},
 	{"id": "korgath", "pos": Vector2(2680, 310), "radius": 155.0, "label": "KANLI MAHZEN — KORGATH (Sv.9)"},
 	{"id": "malakor", "pos": Vector2(3260, 620), "radius": 175.0, "label": "CEHENNEM SUNAKI — MALAKOR (Sv.14)"},
-	{"id": "void_emperor", "pos": Vector2(3400, 1100), "radius": 185.0, "label": "DERİN BOŞLUK BOYUTU — KADİM BOŞLUK HÜKÜMDARI (Sv.18)"},
+	{"id": "void_emperor", "pos": VOID_ARENA, "radius": 150.0, "label": "BOŞLUK YARIĞI — KADİM BOŞLUK HÜKÜMDARI (Sv.18)"},
 ]
 
 const SEASON_MODS := [
@@ -307,6 +309,10 @@ func _build_terrain_map() -> void:
 					tid = 9 # Royal carpet
 				else:
 					tid = 7 # Dungeon slate
+			elif wpos.distance_to(VOID_ARENA) < 150.0:
+				# Boss 4 Void Rift: rün halkası + arduvaz zemin
+				var vd := wpos.distance_to(VOID_ARENA)
+				tid = 10 if (vd < 52.0 or (vd > 92.0 and vd < 104.0)) else 7
 			elif wpos.distance_to(Vector2(2680, 310)) < 165.0:
 				# Boss 2 Blood Crypt
 				tid = 8 if wpos.distance_to(Vector2(2680, 310)) < 85.0 else 7
@@ -323,7 +329,8 @@ func _build_terrain_map() -> void:
 				or (wx >= 1856 and wx < 3080 and wy >= 576 and wy < 624) \
 				or (wx >= 1570 and wx < 1630 and wy >= 200 and wy < 448) \
 				or (wy >= 175 and wy < 220 and wx >= 1570 and wx < 1960) \
-				or (wx >= 2656 and wx < 2704 and wy >= 310 and wy < 580):
+				or (wx >= 2656 and wx < 2704 and wy >= 310 and wy < 580) \
+				or (wx >= 2696 and wx < 2744 and wy >= 624 and wy < 740):
 				tid = 1 # Dirt path
 			elif wx >= SHADOW_X:
 				tid = 6 # Shadow forest grass
@@ -661,6 +668,7 @@ func _new_game() -> void:
 		"roll_cd": 0.0,
 		"roll_dir": Vector2.RIGHT,
 		"spin_cd": 0.0,
+		"magic_cd": 0.0,
 	}
 	gear_bag.clear()
 	equipped = {
@@ -841,7 +849,7 @@ func _spawn_enemies() -> void:
 		["boss_grog", 1960, 195],
 		# Gölge Ormanı & Mahzen (Sv.5-9)
 		["skeleton", 2320, 310], ["skel_warrior", 2390, 440], ["skel_rogue", 2440, 740],
-		["skel_mage", 2540, 500], ["skel_warrior", 2680, 790], ["skel_rogue", 2520, 260],
+		["skel_mage", 2540, 500], ["skel_warrior", 2560, 700], ["skel_rogue", 2520, 260],
 		["skel_mage", 2820, 460], ["skel_warrior", 2890, 740],
 		# Boss 2
 		["boss_korgath", 2680, 310],
@@ -849,19 +857,34 @@ func _spawn_enemies() -> void:
 		["shadow_knight", 2980, 490], ["hell_shaman", 3020, 730], ["shadow_knight", 3070, 580],
 		# Boss 3
 		["boss_malakor", 3260, 620],
-		# Güneydoğu Derin Boşluk Boyutu (Sv.14-18)
-		["slime_blue", 1440, 260], ["slime_blue", 2480, 850],
-		["void_stalker", 3320, 950], ["void_stalker", 3460, 1020], ["shadow_knight", 3380, 1180],
-		# Boss 4
-		["boss_void_emperor", 3400, 1100],
+		# Maden balçıkları
+		["slime_blue", 1440, 260], ["slime_blue", 2400, 900],
+		# Boşluk Yarığı çevresi (Sv.15-18)
+		["void_stalker", 2520, 860], ["void_stalker", 2920, 860], ["void_stalker", 2900, 1010],
+		# Boss 4 (Malakor yenilene kadar mühürlü)
+		["boss_void_emperor", VOID_ARENA.x, VOID_ARENA.y],
 	]
 	for sp in spots:
 		enemies.append(_make_enemy(sp[0], Vector2(sp[1], sp[2])))
 	for e in enemies:
-		if e.boss and day < boss_respawn_days.get(e.boss_id, 0):
+		if (e.boss and day < boss_respawn_days.get(e.boss_id, 0)) or _void_sealed(e):
 			e.dead = true
 			e.dead_t = 99.0
 			e.respawn = 999999.0
+
+func _void_sealed(e: Dictionary) -> bool:
+	return e.boss_id == "void_emperor" and not bosses_defeated.get("malakor", false)
+
+func _unseal_void_rift() -> void:
+	if day < boss_respawn_days.get("void_emperor", 0):
+		return
+	var woke := false
+	for e in enemies:
+		if e.boss_id == "void_emperor" and e.dead and e.respawn > 9999.0:
+			e.merge(_make_enemy(e.kind, e.home), true)
+			woke = true
+	if woke and not bosses_defeated.get("void_emperor", false):
+		_toast("Güneyde bir BOŞLUK YARIĞI açıldı! Kadim Boşluk Hükümdarı uyandı...", Color(0.8, 0.45, 1.0))
 
 func _make_enemy(kind: String, pos: Vector2) -> Dictionary:
 	var d: Dictionary = GameData.ENEMY_DEFS[kind]
@@ -878,6 +901,7 @@ func _make_enemy(kind: String, pos: Vector2) -> Dictionary:
 		"ranged": d.get("ranged", false), "proj_col": d.get("proj_col", Color(0.75, 0.9, 1.0)),
 		"slam_t": 0.0, "slam_cd": 4.2, "nova_cd": 6.0, "charge_t": 0.0, "charge_dir": Vector2.ZERO,
 		"charge_cd": 5.5, "summoned_p2": false, "atk_anim_t": 0.0, "atk_anim": "atk1",
+		"slow_t": 0.0,
 	}
 
 func _respawn_forage() -> void:
@@ -1002,7 +1026,7 @@ func _make_gear(slot: String, lvl: int, rarity := -1, base_idx := -1) -> Diction
 	elif slot == "ring": bases = GameData.RING_BASES
 	var bi := base_idx
 	if bi < 0:
-		var max_bi := bases.size() - (2 if slot == "weapon" else 1) # Keep boss-named axe at end for forging/boss
+		var max_bi := (NORMAL_WEAPON_BASES - 1) if slot == "weapon" else bases.size() - 1 # Boss silahları sadece dövülür
 		bi = clampi(int((lvl - 1) / 2.0) + (1 if rarity >= 3 else 0) + randi_range(-1, 0), 0, max_bi)
 	var base: Dictionary = bases[bi]
 	var g := {
@@ -1440,6 +1464,15 @@ func _sleep_next_day(msg := "Yeni bir güne uyandın!") -> void:
 	if _has_perk("ayla", 6):
 		p.gold += 35
 
+	var pid := _partner_id()
+	if pid != "":
+		var pv := _villager_def(pid)
+		var gifts := ["meal_breakfast", "pot_heal", "meal_stew", "sunflower", "pot_spirit"]
+		var gid: String = gifts[(day + pid.length()) % gifts.size()]
+		house_chest[gid] = int(house_chest.get(gid, 0)) + 1
+		_add_friendship(pid, 10)
+		_toast("%s sabah sandığına %s bıraktı ♥" % [pv.name, GameData.ITEMS[gid].name], Color(1.0, 0.6, 0.8))
+
 	_respawn_forage()
 	_spawn_daily_quest()
 	_spawn_rocks()
@@ -1447,7 +1480,7 @@ func _sleep_next_day(msg := "Yeni bir güne uyandın!") -> void:
 	projectiles.clear()
 	lightning_zones.clear()
 	for e in enemies:
-		if not e.boss or day >= boss_respawn_days.get(e.boss_id, 0):
+		if (not e.boss or day >= boss_respawn_days.get(e.boss_id, 0)) and not _void_sealed(e):
 			e.merge(_make_enemy(e.kind, e.home), true)
 	for i in range(ground_drops.size() - 1, -1, -1):
 		var gd: Dictionary = ground_drops[i]
@@ -1481,6 +1514,7 @@ func _update_player(delta: float) -> void:
 	if p.atk_cd > 0: p.atk_cd -= delta
 	if p.roll_cd > 0: p.roll_cd -= delta
 	if p.spin_cd > 0: p.spin_cd -= delta
+	if p.magic_cd > 0: p.magic_cd -= delta
 
 	if p.regen_cd > 0:
 		p.regen_cd -= delta
@@ -1729,6 +1763,7 @@ func _update_enemies(delta: float) -> void:
 			continue
 
 		if e.hit_t > 0: e.hit_t -= delta
+		if e.slow_t > 0: e.slow_t -= delta
 		if e.atk_cd > 0: e.atk_cd -= delta
 		if e.atk_anim_t > 0: e.atk_anim_t -= delta
 
@@ -1855,12 +1890,12 @@ func _update_enemies(delta: float) -> void:
 
 			var want := 105.0 if e.ranged else 24.0 * (1.4 if e.boss else 1.0)
 			if e.ranged and dist < 72.0:
-				var away: Vector2 = e.pos - dir2 * e.spd * 0.8 * delta
+				var away: Vector2 = e.pos - dir2 * e.spd * 0.8 * (0.4 if e.slow_t > 0 else 1.0) * delta
 				if _enemy_can_walk(away):
 					e.pos = away
 					e.moving = true
 			elif dist > want:
-				var step: Vector2 = e.pos + dir2 * e.spd * (1.18 if enraged else 1.0) * delta
+				var step: Vector2 = e.pos + dir2 * e.spd * (1.18 if enraged else 1.0) * (0.4 if e.slow_t > 0 else 1.0) * delta
 				if _enemy_can_walk(step):
 					e.pos = step
 					e.moving = true
@@ -1949,6 +1984,10 @@ func _update_zone() -> void:
 			var zcol := Color(0.85, 0.95, 1.0)
 			if "GROG" in z or "KORGATH" in z or "MALAKOR" in z or "CEHENNEM" in z:
 				zcol = Color(1.0, 0.45, 0.35)
+			elif "BOŞLUK" in z:
+				zcol = Color(0.8, 0.5, 1.0)
+				if not bosses_defeated.get("malakor", false):
+					z += " — MÜHÜRLÜ (Önce Malakor'u yen)"
 			elif "GÖLGE" in z:
 				zcol = Color(0.85, 0.6, 1.0)
 			_toast(z, zcol)
@@ -2004,10 +2043,15 @@ func _dodge_roll() -> void:
 func _cast_magic_burst() -> void:
 	if state != "play" or in_house or p.roll_t > 0:
 		return
+	if p.magic_cd > 0:
+		_toast("Mistik Dalga hazır değil (%.1f sn)" % p.magic_cd, Color(0.8, 0.7, 1.0))
+		return
 	if p.stam < 20.0:
 		_toast("Yeterli Enerji Yok! Dinlen veya yemek ye.", Color(1.0, 0.5, 0.5))
 		return
 	p.stam -= 20.0
+	var wpn = equipped.get("weapon")
+	p.magic_cd = 3.0 if (wpn != null and "Büyü Asası" in str(wpn.name)) else 6.0
 	p.anim = "attack"
 	p.act_t = 0.35
 	_play_sfx("boss")
@@ -2017,7 +2061,7 @@ func _cast_magic_burst() -> void:
 	var hit_cnt := 0
 	for e in enemies:
 		if not e.dead and e.pos.distance_to(p.pos) < 110.0:
-			var dmg := _stat_atk() * 2.2 + p.level * 8.0
+			var dmg: float = _stat_atk() * 2.2 + p.level * 8.0
 			e.kb = (e.pos - p.pos).normalized() * (60.0 if e.boss else 240.0)
 			_damage_enemy(e, dmg, true)
 			hit_cnt += 1
@@ -2248,6 +2292,7 @@ func _consume_active_item() -> void:
 			if not e.dead and e.pos.distance_to(p.pos) < 260.0:
 				_damage_enemy(e, 50.0 + p.level * 5.0, false)
 				e.kb = (e.pos - p.pos).normalized() * 40.0
+				e.slow_t = 4.0
 				_spawn_fx("fx_sparkle", e.pos - Vector2(0, 10), 16.0, 1.0, Color(0.4, 0.8, 1.0))
 				frost_cnt += 1
 		_toast("Buz Kasırgası! %d düşman donduruldu!" % frost_cnt, Color(0.4, 0.85, 1.0))
@@ -2325,7 +2370,10 @@ func _damage_enemy(e: Dictionary, dmg: float, crit := false, from_dog := false) 
 			_toast("BOSS ZAFERİ! %s YENİLDİ! (Ganimetlerini topla!)" % e.name, Color(1.0, 0.88, 0.3))
 			if e.boss_id == "grog": _advance_story(4, 1)
 			elif e.boss_id == "korgath": _advance_story(7, 1)
-			elif e.boss_id == "malakor": _advance_story(9, 1)
+			elif e.boss_id == "malakor":
+				_advance_story(9, 1)
+				_unseal_void_rift()
+			elif e.boss_id == "void_emperor": _advance_story(10, 1)
 		elif e.home.x >= SHADOW_X:
 			_advance_story(6, 1)
 		_advance_story(3, 1)
@@ -2547,6 +2595,26 @@ func _give_gift_to_npc(item_id: String) -> void:
 		_toast("Bugün bu komşuya zaten hediye verdin!", Color(1.0, 0.7, 0.4))
 		return
 	var v := _villager_def(active_npc_id)
+	var h := _hearts(active_npc_id)
+	if item_id == "bouquet" and h < 4:
+		active_dialog.text = "Ah... çok güzel bir buket ama birbirimizi henüz yeterince tanımıyoruz. (4♥ gerekir, şu an %d♥)" % h
+		state = "dialog"
+		return
+	if item_id == "moon_pendant":
+		var cur := _partner_id()
+		var why := ""
+		if cur != "" and cur != active_npc_id:
+			why = "Sen zaten %s ile hayatını birleştirdin. Bu kolyeyi kabul edemem." % _villager_def(cur).name
+		elif cur == active_npc_id:
+			why = "Biz zaten bir aileyiz! Kolyeyi sakla, bir hatıra olsun."
+		elif not r.get("bouquet", false):
+			why = "Bu kolye çok anlamlı... ama önce bana bir buketle duygularını göstermelisin."
+		elif h < 6:
+			why = "Kalbim sana ısınıyor ama bu büyük bir adım. (6♥ gerekir, şu an %d♥)" % h
+		if why != "":
+			active_dialog.text = why
+			state = "dialog"
+			return
 	_take_bag(item_id, 1)
 	r.gifted_today = true
 	if not r.gifts_given.has(item_id):
@@ -2555,12 +2623,14 @@ func _give_gift_to_npc(item_id: String) -> void:
 	var pts := 15
 	var reaction := "Teşekkür ederim, çok düşüncelisin."
 	var fx_col := Color(0.85, 0.9, 1.0)
-	if item_id == "mermaid_pendant":
+	if item_id == "moon_pendant":
 		pts = 250
-		reaction = "AMAN TANRIM! Denizkızı Tılsımı mı?! Evet, bin kere evet! Artık kaderimiz ve yolumuz bir! (Ebedi Bağ Kuruldu!)"
+		r["partner"] = true
+		reaction = "Ay Taşı Kolyesi... Evet! Bundan sonra yolumuz bir. Her sabah sandığına küçük bir sürpriz bırakacağım!"
 		fx_col = Color(1.0, 0.2, 0.8)
-		_toast("%s ile Ebedi Bağ / Evlilik Bağı Kuruldu!" % v.name, Color(1.0, 0.3, 0.8))
+		_toast("%s artık hayat arkadaşın! ♥" % v.name, Color(1.0, 0.3, 0.8))
 	elif item_id == "bouquet":
+		r["bouquet"] = true
 		pts = 120
 		reaction = "Bu çiçek buketi... Gözlerimin içine bakarak vermen beni o kadar mutlu etti ki! Kalbim seninle atıyor!"
 		fx_col = Color(1.0, 0.3, 0.6)
@@ -2584,6 +2654,12 @@ func _give_gift_to_npc(item_id: String) -> void:
 			_spawn_fx("fx_heart", n.pos + Vector2(0, -26), 16.0, 1.1, fx_col)
 	active_dialog.text = reaction
 	state = "dialog"
+
+func _partner_id() -> String:
+	for vid in npc_rel.keys():
+		if npc_rel[vid].get("partner", false):
+			return vid
+	return ""
 
 func _open_npc_service() -> void:
 	if active_npc_id == "":
@@ -2735,7 +2811,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_play_sfx("click")
 		elif state == "smith" and kc == KEY_TAB:
 			smith_tab = (smith_tab + 1) % 3
-		elif kc >= KEY_1 and kc <= KEY_6:
+		elif kc >= KEY_1 and kc <= KEY_9:
 			_execute_station_choice(kc - KEY_1)
 		elif kc in [KEY_ENTER, KEY_SPACE] and state == "board":
 			_handle_ui_click({"action": "turn_in_daily", "val": 0}, false)
@@ -2922,6 +2998,7 @@ func _execute_station_choice(idx: int) -> void:
 			{"id": "seed_sunflower", "cnt": 2, "price": _disc("ayla", 70), "label": "Ayçiçeği Tohumu x2"},
 			{"id": "seed_pumpkin", "cnt": 2, "price": _disc("ayla", 100), "label": "Balkabağı Tohumu x2"},
 			{"id": "buy_chicken", "cnt": 1, "price": _disc("ayla", 200), "label": "Yeni Çiftlik Tavuğu"},
+			{"id": "bouquet", "cnt": 1, "price": _disc("ayla", 250), "label": "Vadi Çiçek Buketi"},
 		]
 		if idx < shop_opts.size():
 			var o: Dictionary = shop_opts[idx]
@@ -2954,7 +3031,7 @@ func _execute_station_choice(idx: int) -> void:
 				_toast("Yetersiz Altın!", Color(1.0, 0.5, 0.5))
 
 	elif state == "alchemy_shop":
-		var opts := [["pot_growth", 1, 110], ["pot_rain", 1, 130], ["pot_iron", 2, 160], ["pot_spirit", 1, 120]]
+		var opts := [["pot_growth", 1, 110], ["pot_rain", 1, 130], ["pot_iron", 2, 160], ["pot_spirit", 1, 120], ["scroll_fireball", 1, 260], ["scroll_frost", 1, 280]]
 		if idx < opts.size():
 			var o: Array = opts[idx]
 			if p.gold >= o[2]:
@@ -3002,6 +3079,15 @@ func _execute_station_choice(idx: int) -> void:
 				_toast("Gizemli Sandıktan Çıktı: %s!" % g.name, GameData.RARITY[g.rarity].col)
 			else:
 				_toast("320 Altın ve çantada yer gerekir!", Color(1.0, 0.5, 0.5))
+		elif idx == 2:
+			var cost := _disc("lina", 1500)
+			if p.gold >= cost:
+				p.gold -= cost
+				_add_bag("moon_pendant", 1)
+				_play_sfx("coin")
+				_toast("Ay Taşı Kolyesi alındı. Doğru kişiyi bekliyor...", Color(0.75, 0.85, 1.0))
+			else:
+				_toast("Yetersiz Altın! (%d G)" % cost, Color(1.0, 0.5, 0.5))
 
 	elif state == "alchemy":
 		var recipes := [
@@ -3009,6 +3095,8 @@ func _execute_station_choice(idx: int) -> void:
 			{"out": "pot_rain", "req": {"mush_glow": 1, "mush_red": 1}},
 			{"out": "pot_spirit", "req": {"mush_glow": 1, "spirit_crystal": 1}},
 			{"out": "pot_iron", "req": {"copper_ore": 1, "mush_red": 1}},
+			{"out": "scroll_fireball", "req": {"slime_jelly": 2, "mush_red": 1}},
+			{"out": "scroll_frost", "req": {"slime_jelly": 2, "mush_glow": 1}},
 		]
 		if idx < recipes.size():
 			_craft_recipe(recipes[idx])
@@ -3096,6 +3184,8 @@ func _execute_smith_choice(idx: int) -> void:
 			{"slot": "armor", "bi": 6, "rar": 3, "lvl": 10, "gold": 450, "mats": {"boss_trophy_blood": 1, "gold_ore": 3}},
 			{"slot": "weapon", "bi": 9, "rar": 4, "lvl": 15, "gold": 800, "mats": {"boss_trophy_demon": 1, "spirit_crystal": 3}},
 			{"slot": "armor", "bi": 8, "rar": 4, "lvl": 15, "gold": 800, "mats": {"boss_trophy_demon": 1, "ancient_skull": 2}},
+			{"slot": "weapon", "bi": 11, "rar": 4, "lvl": 19, "gold": 1400, "mats": {"boss_trophy_void": 1, "void_crystal": 2}},
+			{"slot": "weapon", "bi": 12, "rar": 4, "lvl": 19, "gold": 1400, "mats": {"boss_trophy_void": 1, "spirit_crystal": 3}},
 		]
 		if idx < forge_recipes.size():
 			var fr: Dictionary = forge_recipes[idx]
@@ -3372,6 +3462,10 @@ func _draw_house_interior() -> void:
 		_spr(world, "fire", int(t * 10), INT_FIRE_POS - Vector2(0, 6), {"sc": 0.5})
 		if bosses_defeated.get("malakor", false):
 			_spr(world, "wall_sword", 0, INT_FIRE_POS - Vector2(0, 60), {"sc": 1.0, "col": Color(1.4, 1.1, 0.45)})
+		if bosses_defeated.get("void_emperor", false):
+			var cp := INT_FIRE_POS - Vector2(-30, 52)
+			world.draw_circle(cp, 9.0 + sin(t * 3.0) * 1.5, Color(0.6, 0.25, 1.0, 0.35))
+			_icon_at(world, GameData.ITEMS["boss_trophy_void"].icon, Rect2(cp - Vector2(8, 8), Vector2(16, 16)))
 	})
 
 	var bed_k := "bed_double" if house_upgrades.get("grand_home", false) else "bed_single"
@@ -3555,12 +3649,24 @@ func _draw_world() -> void:
 	for ar in BOSS_ARENAS:
 		if view.intersects(Rect2(ar.pos - Vector2(ar.radius + 30, ar.radius + 30), Vector2((ar.radius + 30) * 2, (ar.radius + 30) * 2))):
 			var rcol := Color(0.9, 0.55, 0.25, 0.45) if ar.id == "grog" else (Color(0.95, 0.2, 0.25, 0.55) if ar.id == "korgath" else Color(1.0, 0.35, 0.15, 0.65))
+			var fcol := Color(1.0, 0.55, 0.2, 0.92)
+			if ar.id == "void_emperor":
+				rcol = Color(0.7, 0.35, 1.0, 0.7)
+				fcol = Color(0.75, 0.4, 1.0, 0.95)
+				var sealed: bool = not bosses_defeated.get("malakor", false)
+				var pulse := 0.5 + 0.5 * sin(t * 2.4)
+				world.draw_circle(ar.pos, 46.0 + pulse * 6.0, Color(0.25, 0.05, 0.4, 0.35 if sealed else 0.55))
+				world.draw_arc(ar.pos, 30.0 + pulse * 10.0, 0, TAU, 48, Color(0.85, 0.5, 1.0, 0.5), 2.0)
+				if sealed:
+					for si in 6:
+						var sa := si * TAU / 6.0 + t * 0.4
+						world.draw_line(ar.pos, ar.pos + Vector2(cos(sa), sin(sa)) * 60.0, Color(0.9, 0.75, 1.0, 0.35), 2.0)
 			world.draw_arc(ar.pos, ar.radius - 12.0, 0, TAU, 64, rcol, 3.0)
 			for ai in 8:
 				var ang := ai * TAU / 8.0
 				var pp: Vector2 = ar.pos + Vector2(cos(ang), sin(ang)) * (ar.radius - 10.0)
 				world.draw_rect(Rect2(pp - Vector2(5, 13), Vector2(10, 15)), Color(0.28, 0.26, 0.34))
-				world.draw_circle(pp - Vector2(0, 15), 3.2 + sin(t * 9.0 + ai) * 0.8, Color(1.0, 0.55, 0.2, 0.92))
+				world.draw_circle(pp - Vector2(0, 15), 3.2 + sin(t * 9.0 + ai) * 0.8, fcol)
 
 	# Framed Wooden Garden Bed Border + Furrowed Soil Beds
 	var farm_rect := Rect2(FARM_OX - 4, FARM_OY - 4, FARM_COLS * FARM_CELL + 8, FARM_ROWS * FARM_CELL + 8)
@@ -3725,6 +3831,8 @@ func _draw_world() -> void:
 			var col := Color(tint.r, tint.g, tint.b, alpha)
 			if e.hit_t > 0:
 				col = Color(3.0, 3.0, 3.0, alpha)
+			elif e.slow_t > 0:
+				col = Color(tint.r * 0.55, tint.g * 0.9, minf(2.0, tint.b * 1.6 + 0.4), alpha)
 			elif e.windup > 0 or e.slam_t > 0 or e.charge_t > 0.35:
 				col = Color(2.2, 0.85, 0.65, alpha) if int(t * 16) % 2 == 0 else col
 			var esc: float = GameData.ENEMY_DEFS[e.kind].sc
@@ -4140,6 +4248,21 @@ func _draw_hud() -> void:
 	var hb_y := vs.y - 66.0
 	_panel_wood(Rect2(hb_x - 10, hb_y - 8, total_w + 16, slot_sz + 16))
 
+	# Yetenek bekleme süreleri: [X] Dönen Kılıç, [Z] Mistik Dalga
+	if not in_house:
+		var skills := [["X", p.spin_cd, 4.0, Color(1.0, 0.8, 0.35)], ["Z", p.magic_cd, 6.0, Color(0.75, 0.45, 1.0)]]
+		for si in skills.size():
+			var sk: Array = skills[si]
+			var sr := Rect2(hb_x - 10 - 50.0 * (2 - si) - 6.0, hb_y + 2, 44, 44)
+			_panel_wood(sr)
+			var cd: float = maxf(0.0, sk[1])
+			if cd > 0.0:
+				var frac: float = clampf(cd / sk[2], 0.0, 1.0)
+				hud.draw_rect(Rect2(sr.position.x + 4, sr.position.y + 4 + 36 * (1.0 - frac), 36, 36 * frac), Color(0, 0, 0, 0.55))
+				_txt(hud, sr.position + Vector2(22, 29), "%.0f" % ceilf(cd), 15, COL_CREAM, HORIZONTAL_ALIGNMENT_CENTER, 2, true)
+			else:
+				_txt(hud, sr.position + Vector2(22, 29), sk[0], 17, sk[3], HORIZONTAL_ALIGNMENT_CENTER, 2, true)
+
 	var w = equipped.get("weapon", null)
 	var slot_icons := [
 		[w.icon if w != null else 9, _gear_title(w) if w != null else "Silah", 1],
@@ -4218,6 +4341,7 @@ func _draw_hud() -> void:
 			["Ayçiçeği Tohumu x2", "%d Altın" % _disc("ayla", 70), "Değerli yaz çiçeği (Komşular sever!)"],
 			["Balkabağı Tohumu x2", "%d Altın" % _disc("ayla", 100), "4 günde dev hasat"],
 			["Yeni Çiftlik Tavuğu", "%d Altın" % _disc("ayla", 200), "Her sabah yumurta verir!"],
+			["Vadi Çiçek Buketi", "%d Altın" % _disc("ayla", 250), "4+ kalpli bir komşuya ver, bağınız derinleşsin"],
 		])
 		"tavern": _draw_station_modal(vs, "MERYEM'İN HANI — İKSİR & YEMEK", [
 			["Şifa İksiri x1", "%d Altın" % _disc("meryem", 35), "80 Can yeniler. Savaşta [H] ile iç."],
@@ -4231,6 +4355,8 @@ func _draw_hud() -> void:
 			["Yağmur Totemi", "130 Altın", "Yağmur yağdırır ve tüm tarlayı sular"],
 			["Demir Deri İksiri x2", "160 Altın", "Boss savaşında +12 DEF zırh iksiri"],
 			["Ruh Şurubu", "120 Altın", "Can & Enerji + Hız artışı"],
+			["Alev Topu Parşömeni", "260 Altın", "En yakın 3 düşmana büyük ateş hasarı [7]"],
+			["Buz Kasırgası Parşömeni", "280 Altın", "Çevreyi dondurur: 4 sn %60 yavaşlatma [7]"],
 		])
 		"fisher_trade": _draw_station_modal(vs, "KAPTAN BRAM'IN İSKELE TAKASI", [
 			["Izgara Alabalık", "110 Altın", "55 Can, 60 Enerji"],
@@ -4240,12 +4366,15 @@ func _draw_hud() -> void:
 		"loot_buyer": _draw_station_modal(vs, "LİNA'NIN NADİR EŞYA PAZARI", [
 			["Tüm Canavar Ganimetlerini Sat", "+%25 Primli", "Kemik, Gölge Özü ve Kafataslarını yüksek fiyata alır!"],
 			["Gizemli Ekipman Sandığı", "320 Altın", "Garantili Nadir / Destansı / Efsanevi ekipman çıkar!"],
+			["Ay Taşı Kolyesi", "%d Altın" % _disc("lina", 1500), "Buket verdiğin 6+ kalpli komşuya ver: hayat arkadaşın olsun"],
 		])
 		"alchemy": _draw_station_modal(vs, "EV SİMYA MASASI", [
 			["Bereket İksiri", "2 Kırmızı Mantar + 1 Yaban Havucu", "Tüm ekinleri anında olgunlaştırır!"],
 			["Yağmur Totemi", "1 Ay Işığı Mantarı + 1 Kırmızı Mantar", "Yağmur yağdırıp tarlayı sular!"],
 			["Ruh Şurubu", "1 Ay Işığı Mantarı + 1 Ruh Kristali", "Can & Enerji fuller + Hız verir!"],
 			["Demir Deri İksiri", "1 Bakır Cevheri + 1 Kırmızı Mantar", "60 sn +12 Savunma verir!"],
+			["Alev Topu Parşömeni", "2 Balçık Jeli + 1 Kırmızı Mantar", "En yakın 3 düşmana ateş hasarı"],
+			["Buz Kasırgası Parşömeni", "2 Balçık Jeli + 1 Ay Işığı Mantarı", "Çevredeki düşmanları yavaşlatır"],
 		])
 		"cook": _draw_station_modal(vs, "EV MUTFAĞI & SICAK OCAK", [
 			["Çiftlik Kahvaltısı", "1 Yumurta + 1 Süt", "65 Enerji | 130 Altına satılır"],
@@ -4558,7 +4687,7 @@ func _draw_gift_modal(vs: Vector2) -> void:
 
 	var gift_keys := []
 	for id in bag.keys():
-		if GameData.ITEMS[id].type in ["crop", "animal", "fish", "forage", "food", "mat", "loot"] and not id.begins_with("boss_trophy_"):
+		if GameData.ITEMS[id].type in ["crop", "animal", "fish", "forage", "food", "mat", "loot", "gift"] and not id.begins_with("boss_trophy_"):
 			gift_keys.append(id)
 	gift_keys.sort()
 
@@ -4605,6 +4734,10 @@ func _draw_social_modal(vs: Vector2) -> void:
 		var tx := cr.position.x + 110
 		_txt_ink(Vector2(tx, cr.position.y + 28), "%s  (%s)" % [v.name, v.role], 16, COL_INK, HORIZONTAL_ALIGNMENT_LEFT, true)
 		_draw_heart_row(Vector2(tx, cr.position.y + 34), h, 10, 14.0, 16.0)
+		if rel.get("partner", false):
+			_txt_ink(Vector2(cr.end.x - 14, cr.position.y + 47), "♥ Hayat Arkadaşın", 13, COL_INK_RED, HORIZONTAL_ALIGNMENT_RIGHT, true)
+		elif rel.get("bouquet", false):
+			_txt_ink(Vector2(cr.end.x - 14, cr.position.y + 47), "✿ Buket verildi", 13, COL_INK_GREEN, HORIZONTAL_ALIGNMENT_RIGHT, true)
 		var cur_loc := ""
 		for n in npcs:
 			if n.id == v.id: cur_loc = n.zone
@@ -4695,6 +4828,8 @@ func _draw_smith_modal(vs: Vector2) -> void:
 			["Kan Şövalyesi Zırhı (Destansı)", "%dG + 1 Kan Kristali + 3 Altın" % _disc("demir", 450), "Boss 2 Ganimeti! Kızıl Şövalye görünümü + dev Can/DEF"],
 			["İblis Biçen Alev Kılıcı (Efsanevi)", "%dG + 1 İblis Boynuzu + 3 Ruh Kr." % _disc("demir", 800), "Boss 3 Ganimeti! Oyunun en güçlü kılıcı (%4 Emme)"],
 			["İblis Lordu Zırhı (Efsanevi)", "%dG + 1 İblis Boynuzu + 2 Kafatası" % _disc("demir", 800), "Boss 3 Ganimeti! Altın Paladin zırh görünümü"],
+			["Kadim Boşluk Tırpanı (Efsanevi)", "%dG + 1 Boşluk Kalbi + 2 Boşluk Kr." % _disc("demir", 1400), "Boss 4 Ganimeti! %8 Can Emme"],
+			["Yıldız Işığı Büyü Asası (Efsanevi)", "%dG + 1 Boşluk Kalbi + 3 Ruh Kr." % _disc("demir", 1400), "Boss 4 Ganimeti! Mistik Dalga [Z] bekleme süresi yarıya iner"],
 		]
 
 	for i in rows.size():
@@ -5064,7 +5199,7 @@ func _snap(filename: String) -> void:
 
 func _run_automated_test(delta: float) -> void:
 	test_timer += delta
-	var T := [0.45, 0.95, 1.45, 1.95, 2.45, 2.95, 3.5, 4.05, 4.6, 5.2]
+	var T := [0.45, 0.95, 1.45, 1.95, 2.45, 2.95, 3.5, 4.05, 4.6, 5.2, 5.8, 6.4]
 	if test_stage >= T.size() or test_timer < T[test_stage]:
 		return
 	match test_stage:
@@ -5171,5 +5306,68 @@ func _run_automated_test(delta: float) -> void:
 			assert(in_house == true, "in_house roundtrip mismatch")
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(_active_save_path()))
 			print("[TEST] ALL V4 CHECKS PASSED (lv=", p.level, " gear=", gear_bag.size(), " kitchen=", house_upgrades.get("kitchen", false), " rug=", house_decor.get("rug", -1), ")")
+			# --- V5: Boşluk Yarığı ---
+			bosses_defeated.erase("malakor")
+			boss_respawn_days.erase("void_emperor")
+			_spawn_enemies()
+			var ve: Dictionary = {}
+			for e in enemies:
+				if e.boss_id == "void_emperor": ve = e
+			assert(not ve.is_empty() and ve.dead, "Void emperor should be sealed before Malakor")
+			var arena_tile := terrain_map[int(VOID_ARENA.y / TILE_SIZE) * TILE_COLS + int(VOID_ARENA.x / TILE_SIZE)]
+			assert(arena_tile == 10, "Void arena center should be rune tile, got %d" % arena_tile)
+			_exit_house()
+			house_fade = 0.0
+			for e in enemies:
+				if e.boss_id == "malakor":
+					_damage_enemy(e, 999999.0)
+			assert(bosses_defeated.get("malakor", false), "Malakor kill not registered")
+			assert(not ve.dead, "Void emperor should wake after Malakor dies")
+			p.pos = VOID_ARENA + Vector2(-60, 110)
+			p.dir = "up"
+			dog.pos = p.pos + Vector2(-22, 10)
+			cam.position = p.pos + Vector2(0, -50)
+			cam.reset_smoothing()
+		10:
+			_snap("v5_10_void_rift.png")
+			# --- V5: Parşömen yavaşlatma ---
+			var near: Dictionary = {}
+			for e in enemies:
+				if not e.dead and e.pos.distance_to(p.pos) < 260.0: near = e
+			assert(not near.is_empty(), "No enemy near void rift for frost test")
+			bag["scroll_frost"] = 1
+			consumable_choice_idx = _get_consumable_list().find("scroll_frost")
+			_consume_active_item()
+			assert(near.slow_t > 0.0, "Frost scroll should slow enemies")
+			# --- V5: Rastgele silah havuzu boss silahı içermemeli ---
+			for i in 200:
+				var g := _make_gear("weapon", 30, 4)
+				assert(not ("Boşluk" in g.name or "Grog" in g.name or "Asası" in g.name), "Random roll produced boss weapon: " + g.name)
+			# --- V5: Buket / Kolye / Hayat arkadaşı ---
+			active_npc_id = "meryem"
+			npc_rel["meryem"].pts = 100
+			npc_rel["meryem"].gifted_today = false
+			bag["bouquet"] = 1
+			_give_gift_to_npc("bouquet")
+			assert(_has_bag("bouquet") and not npc_rel["meryem"].get("bouquet", false), "Bouquet must be refused under 4 hearts")
+			npc_rel["meryem"].pts = 700
+			_give_gift_to_npc("bouquet")
+			assert(npc_rel["meryem"].get("bouquet", false), "Bouquet should be accepted at 4+ hearts")
+			npc_rel["meryem"].gifted_today = false
+			bag["moon_pendant"] = 1
+			_give_gift_to_npc("moon_pendant")
+			assert(_partner_id() == "meryem", "Pendant should make Meryem the partner")
+			house_chest.clear()
+			_sleep_next_day()
+			assert(not house_chest.is_empty(), "Partner should leave a morning gift")
+			_save_game(true, true)
+			assert(_load_game(), "V5 load failed")
+			assert(_partner_id() == "meryem", "Partner roundtrip mismatch")
+			assert(bosses_defeated.get("malakor", false), "Malakor roundtrip mismatch")
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(_active_save_path()))
+			state = "social"
+		11:
+			_snap("v5_11_partner_social.png")
+			print("[TEST] ALL V5 CHECKS PASSED (partner=", _partner_id(), ")")
 			get_tree().quit(0)
 	test_stage += 1

@@ -140,13 +140,13 @@ const ENEMY_DEFS := {
 	"void_stalker": {
 		"name": "Boşluk Avcısı", "spr": "sskel", "tint": Color(0.65, 0.35, 0.95), "sc": 1.3, "bar": 26.0,
 		"hp": 160.0, "atk": 26.0, "def": 8.0, "spd": 64.0, "xp": 95, "gold": [30, 50],
-		"lvl": 9, "gear": 0.32, "mats": [["dark_essence", 0.7], ["void_crystal", 0.35]],
+		"lvl": 15, "gear": 0.32, "mats": [["dark_essence", 0.7], ["void_crystal", 0.35], ["scroll_fireball", 0.08], ["scroll_frost", 0.06]],
 	},
 	"boss_void_emperor": {
 		"name": "KADİM BOŞLUK HÜKÜMDARI", "spr": "demon", "tint": Color(0.5, 0.2, 0.85), "sc": 3.1,
 		"hp": 2600.0, "atk": 52.0, "def": 18.0, "spd": 60.0, "xp": 2200, "gold": [1800, 2500],
 		"lvl": 18, "gear": 1.0, "boss": true, "boss_id": "void_emperor",
-		"arena": Vector2(3400, 1100), "trophy": "boss_trophy_void",
+		"arena": Vector2(2720, 880), "trophy": "boss_trophy_void",
 		"mats": [["boss_trophy_void", 1.0], ["void_crystal", 1.0], ["spirit_crystal", 1.0]],
 	},
 }
@@ -155,7 +155,7 @@ const BOSS_LIST := [
 	{"id": "grog", "def": "boss_grog", "zone": "Kuzey Harabesi", "lvl": 5, "drop": "Grog'un Savaş Baltası + Goblin Lordu Dişi"},
 	{"id": "korgath", "def": "boss_korgath", "zone": "Kanlı Mahzen (Kuzeydoğu)", "lvl": 9, "drop": "Kan Dişi Kılıç + Kan Kristali"},
 	{"id": "malakor", "def": "boss_malakor", "zone": "Cehennem Sunakı (En Doğu)", "lvl": 14, "drop": "Efsanevi İblis Seti + İblis Boynuzu"},
-	{"id": "void_emperor", "def": "boss_void_emperor", "zone": "Derin Boşluk Boyutu (Güneydoğu)", "lvl": 18, "drop": "Tanrı Katı Boşluk Seti + Boşluk Kalbi"},
+	{"id": "void_emperor", "def": "boss_void_emperor", "zone": "Boşluk Yarığı (Gölge Ormanı Güneyi) — Malakor sonrası açılır", "lvl": 18, "drop": "Boşluk Tırpanı / Yıldız Asası + Boşluk Kalbi"},
 ]
 
 const ITEMS := {
@@ -218,12 +218,12 @@ const ITEMS := {
 	"boss_trophy_blood": {"name": "Kan Kristali", "icon": 1534, "type": "loot", "sell": 320, "desc": "Boss Korgath ganimeti! Kan Şövalyesi Zırhı dövmekte kullanılır."},
 	"boss_trophy_demon": {"name": "İblis Boynuzu", "icon": 2167, "type": "loot", "sell": 600, "desc": "Boss Malakor ganimeti! Efsanevi İblis Seti dövülür."},
 	"boss_trophy_void": {"name": "Kadim Boşluk Kalbi", "icon": 1891, "type": "loot", "sell": 1200, "desc": "Gizli Boss Kadim Boşluk Hükümdarı ganimeti! Tanrı Katı ekipman döver."},
-	# Özel İlişki & Romantizm Eşyaları (Stardew Valley Tarzı)
-	"bouquet": {"name": "Vadi Çiçek Buketi", "icon": 20, "type": "gift", "buy": 250, "sell": 100, "desc": "Köylülerle derin bağ kurmanı sağlar. 4+ kalp olan köylüye verince özel aşk/kardeşlik diyaloğu açar!"},
-	"mermaid_pendant": {"name": "Denizkızı Tılsımı", "icon": 1868, "type": "gift", "buy": 1500, "sell": 500, "desc": "Stardew efsanesi! 6 Kalp olan köy yoldaşına evlilik/ebedi yol arkadaşlığı teklif et!"},
+	# Özel İlişki Eşyaları
+	"bouquet": {"name": "Vadi Çiçek Buketi", "icon": 20, "type": "gift", "buy": 250, "sell": 100, "desc": "4+ kalp olan bir komşuya ver: bağınız derinleşir (+120 Dostluk). Ayla'nın dükkanında satılır."},
+	"moon_pendant": {"name": "Ay Taşı Kolyesi", "icon": 1868, "type": "gift", "buy": 1500, "sell": 500, "desc": "Buket verdiğin 6+ kalpli bir komşuya ver: hayat arkadaşın olur ve her sabah sana hediye bırakır. Lina satar."},
 	# Yeni Büyü & Menzilli Silah Parşömenleri
-	"scroll_fireball": {"name": "Alev Topu Parşömeni", "icon": 1016, "type": "potion", "sell": 160, "desc": "Kullandığında en yakın 3 düşmana 120 Ateş Hasarı vuran alev topları fırlatır!"},
-	"scroll_frost": {"name": "Buz Kasırgası Parşömeni", "icon": 1005, "type": "potion", "sell": 180, "desc": "Çevredeki tüm düşmanları dondurur ve 4 saniye boyunca %60 yavaşlatır!"},
+	"scroll_fireball": {"name": "Alev Topu Parşömeni", "icon": 1016, "type": "potion", "sell": 160, "desc": "[7] ile kullan: en yakın 3 düşmana büyük ateş hasarı. Bilge Ozan satar, evde simya ile yapılır."},
+	"scroll_frost": {"name": "Buz Kasırgası Parşömeni", "icon": 1005, "type": "potion", "sell": 180, "desc": "[7] ile kullan: çevredeki düşmanlara hasar verir ve 4 sn boyunca %60 yavaşlatır."},
 }
 
 # ---------------- STARDEW TARZI YAŞAYAN KOMŞULAR (6 KÖYLÜ) ----------------
@@ -397,6 +397,7 @@ const STORY_CHAPTERS := [
 	{"title": "8. İkinci Boss: Kan Canavarı", "desc": "Kanlı Mahzen arenasında KAN CANAVARI KORGATH'ı yen!", "need": 1, "reward_gold": 900, "reward_item": "spirit_crystal", "reward_cnt": 3},
 	{"title": "9. Efsanevi Hazırlık", "desc": "Demirci Örsünde silahını güçlendir veya Boss ekipmanı döv.", "need": 1, "reward_gold": 700, "reward_item": "pot_iron", "reward_cnt": 3},
 	{"title": "10. Son Boss: İblis Lordu Malakor", "desc": "En doğudaki Cehennem Sunakında KIZIL İBLİS MALAKOR'u yen!", "need": 1, "reward_gold": 3000, "reward_item": "ancient_skull", "reward_cnt": 3},
+	{"title": "11. Gizli Boss: Boşluk Yarığı", "desc": "Malakor'un ölümüyle Gölge Ormanının güneyinde bir yarık açıldı. KADİM BOŞLUK HÜKÜMDARI'nı yen!", "need": 1, "reward_gold": 5000, "reward_item": "void_crystal", "reward_cnt": 3},
 ]
 
 # ---------------- AŞAMALI EV GELİŞTİRME & İÇ DEKORASYON ----------------

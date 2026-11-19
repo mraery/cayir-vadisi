@@ -13,7 +13,11 @@ Godot 4.7 ile geliştirilmiş; **çiftlik yaşamı**, **girilebilir ve özelleş
 - **Aksiyon RPG & Boss Avı**:
   - 5 zırh kademesine göre görünümü değişen kahraman, takla kaçışı (`[Boşluk]`), Dönen Kılıç yeteneği (`[X]`) ve savaşçı dostun Karabaş (`[R]` kemik atışı).
   - Kuzey Harabesi (**Grog**), Kanlı Mahzen (**Korgath**) ve Cehennem Sunağı (**Malakor**) boss savaşları; demirci örsünde `+1..+5` geliştirme ve efsanevi boss ekipmanı dövme.
+  - **Gizli 4. Boss — Boşluk Yarığı**: Malakor yenilince Gölge Ormanı'nın güneyinde mühür kırılır ve **Kadim Boşluk Hükümdarı** uyanır. Ganimetiyle *Kadim Boşluk Tırpanı* (%8 can emme) veya *Yıldız Işığı Büyü Asası* (Mistik Dalga bekleme süresi yarıya iner) dövülür.
+  - **Mistik Dalga (`[Z]`)**: 20 enerjiyle çevreye büyü patlaması (6 sn bekleme). X/Z bekleme süreleri hotbar'ın solunda görünür.
+  - **Parşömenler**: Alev Topu ve Buz Kasırgası (4 sn %60 yavaşlatma). Bilge Ozan satar, evde simya ile balçık jelinden yapılır, Boşluk Avcılarından düşer.
 - **Köy Komşuları**: Ayla, Demir, Meryem, Bilge Ozan, Kaptan Bram ve Lina ile günlük sohbet, hediye keşfi ve 3♥ / 6♥ kalıcı avantajlar.
+  - **Hayat Arkadaşı**: 4♥ komşuya *Vadi Çiçek Buketi* (Ayla), ardından 6♥ olunca *Ay Taşı Kolyesi* (Lina) ver. Hayat arkadaşın her sabah ev sandığına hediye bırakır.
 
 ## Ekran Görüntüleri
 
@@ -29,6 +33,10 @@ Godot 4.7 ile geliştirilmiş; **çiftlik yaşamı**, **girilebilir ve özelleş
 | :---: | :---: |
 | ![Komşu Diyalogu](screenshots/v4_06_stardew_dialog.png) | ![Boss Savaşı](screenshots/v4_09_boss_hud.png) |
 
+| Boşluk Yarığı (4. Boss) | Hayat Arkadaşı |
+| :---: | :---: |
+| ![Boşluk Yarığı](screenshots/v5_10_void_rift.png) | ![Hayat Arkadaşı](screenshots/v5_11_partner_social.png) |
+
 ## Kontroller
 
 | Tuş | İşlev |
@@ -37,6 +45,7 @@ Godot 4.7 ile geliştirilmiş; **çiftlik yaşamı**, **girilebilir ve özelleş
 | `Sol Tık` / `J` | Seçili aleti kullan / Saldır |
 | `Boşluk` | Kaçınma taklası (dışarıda) |
 | `X` | Dönen Kılıç alan yeteneği |
+| `Z` | Mistik Dalga büyü patlaması |
 | `E` / `Sağ Tık` | Konuş, hasat et, kapı/istasyon etkileşimi |
 | `B` | Ev Düzenleme & Dekorasyon menüsü (evdeyken) |
 | `1 - 8` | Hotbar yuvası seç (`6`/`7` tekrar basınca tohum/iksir değiştir) |
